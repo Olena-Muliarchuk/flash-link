@@ -4,8 +4,12 @@ import { generateShortCode } from '../utils/generator';
 export class LinkService {
     private readonly DEFAULT_TTL = 86400; // 24 hour
 
-    async createShortLink(originalUrl: string, ttl?: number, customCode?: string): Promise<string> {
-        const finalTTL = ttl || this.DEFAULT_TTL;
+    async createShortLink(
+        originalUrl: string,
+        ttlSeconds?: number,
+        customCode?: string,
+    ): Promise<string> {
+        const ttl = ttlSeconds || this.DEFAULT_TTL;
         let shortCode = customCode;
 
         if (shortCode) {
@@ -14,18 +18,32 @@ export class LinkService {
                 throw new Error('Code already in use');
             }
         } else {
-            do {
+            let unique = false;
+            let attempts = 0;
+            const MAX_ATTEMPTS = 10;
+
+            while (!unique && attempts < MAX_ATTEMPTS) {
                 shortCode = generateShortCode();
-            } while (await redis.exists(`link:${shortCode}`));
+                const exists = await redis.exists(`link:${shortCode}`);
+                if (!exists) {
+                    unique = true;
+                } else {
+                    attempts++;
+                }
+            }
+
+            if (!unique || !shortCode) {
+                throw new Error('Failed to generate unique code. Please try again.');
+            }
         }
 
         await redis
             .multi()
-            .set(`link:${shortCode}`, originalUrl, 'EX', finalTTL)
-            .set(`stats:${shortCode}`, 0, 'EX', finalTTL)
+            .set(`link:${shortCode}`, originalUrl, 'EX', ttl)
+            .set(`stats:${shortCode}`, 0, 'EX', ttl)
             .exec();
 
-        return shortCode!;
+        return shortCode;
     }
 
     async getOriginalUrl(shortCode: string): Promise<string | null> {

@@ -21,6 +21,12 @@ export class LinkController {
             if (error instanceof Error && error.message === 'Code already in use') {
                 return res.status(409).json({ error: 'Custom code already in use' });
             }
+            if (
+                error instanceof Error &&
+                error.message.includes('Failed to generate unique code')
+            ) {
+                return res.status(503).json({ error: 'Server busy, please try again later' });
+            }
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
