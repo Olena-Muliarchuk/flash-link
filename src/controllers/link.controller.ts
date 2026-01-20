@@ -4,7 +4,17 @@ import { CreateLinkBody, GetLinkParams } from '../schemas/link.schema';
 
 const linkService = new LinkService();
 
+/**
+ * Controller class handling HTTP requests for Link operations.
+ */
 export class LinkController {
+    /**
+     * Handles the creation of a new short link.
+     * POST /api/shorten
+     *
+     * @param req - Express Request object containing url, ttl, and customCode.
+     * @param res - Express Response object.
+     */
     async shorten(req: Request, res: Response) {
         const { url, ttl, customCode } = req.body as CreateLinkBody;
 
@@ -31,6 +41,10 @@ export class LinkController {
         }
     }
 
+    /**
+     * Redirects the user to the original URL based on the short code.
+     * GET /:code
+     */
     async redirect(req: Request, res: Response) {
         const { code } = req.params as GetLinkParams;
 
@@ -43,6 +57,10 @@ export class LinkController {
         }
     }
 
+    /**
+     * Retrieves statistics (visit count) for a short link.
+     * GET /api/stats/:code
+     */
     async getStats(req: Request, res: Response) {
         const { code } = req.params as GetLinkParams;
 
